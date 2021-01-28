@@ -1,8 +1,47 @@
 #LCG:
 #X(N+1) = (X(N) * A + C) mod M
 
+#--- нахождение инкремента ---
+#A = 178521
+#M = 1587518778589
+#
+#X0 -> X1
+#
+#X1 = (A * X0 + C) mod M
+#
+#(X1 - X0 * A) mod M = C
+
+
+# --- нахождение множитель ---
+
+# M = 1587518778589
+
+# X1 = (X0 * A + C) mod M
+# X2 = (X1 * A + C) mod M
+
+# X2 - X1 = ((X1 * A + C) - (X0 * A + C)) mod M
+# X2 - X1 = (X1 * A - X0 * A) mod M
+# X2 - X1 = ((X1 - X0) * A) mod M
+
+# (X2-X1) * (X1-X0)^(-1) = A mod M
+
+
+# K = (X1-X0)^(-1)
+# (X1-X0)*K = 1 mod M
+
+# A = ((X2-X1) * (X1-X0)^(-1)) mod M
+
 from sys import argv
 import argparse
+
+def gcdExtended(a, b):
+    if a == 0 :
+        return b,0,1
+    gcd,x1,y1 = gcdExtended(b%a, a)
+    x = y1 - (b//a) * x1
+    y = x1
+    return gcd,x,y
+
 
 parser = argparse.ArgumentParser(description='Calculate different elements of the LCG algorythm')
 
@@ -36,7 +75,7 @@ args = parser.parse_args()
 
 
 class Calculator():
-	def __init__(self,testingMode, M, C, A, X):
+	def __init__(self,testingMode=-1, M=-1, C=-1, A=-1, X=-1):
 		self.testingMode = int(testingMode)
 		self.A = int(A)
 		self.C = int(C)
@@ -58,7 +97,11 @@ X = {self.X}
 			self.calcNext()
 
 		elif self.testingMode == 1:
-			self.calcModule()
+			self.calcIncrement()
+
+		elif self.testingMode == 2:
+			self.calcMultiplier()
+
 
 	def calcNext(self):
 		print("The next number will be: ", end='')
@@ -66,15 +109,33 @@ X = {self.X}
 		print(next)
 
 	def calcIncrement(self):
-		pass
+		C = (self.X[-1] - self.X[-2]*self.A)% self.M
+		print(f'The increment is {C}')
+		self.C = C
+		self.calcNext()
+
+	def calcMultiplier(self):
+		gcd, x, y = gcdExtended(self.X[-2]-self.X[-3], self.M)
+		rev = -1
+		if gcd == 1:
+			rev = (x % self.M + self.M) % self.M
+		A = ((self.X[-1]-self.X[-2]) * rev) % self.M
+		print(f"The multiplier is {A}")
+		self.A = A
+		self.calcIncrement()
+
+
+
 
 def genCalc():
-	calc = Calculator(args.testing_mode[0], args.module[0], args.increment[0], args.multiplier[0], args.known_elements)
+	calc = Calculator(args.testing_mode[0], args.module[0] if args.module else -1, args.increment[0] if args.increment else -1, args.multiplier[0] if args.multiplier else -1, args.known_elements)
 	return calc
 
 def main():
+	print(args)
 	lcgCalc = genCalc()
 	lcgCalc.testOut()
+	lcgCalc.detectMode()
 
 if __name__ == "__main__":
 	main()
